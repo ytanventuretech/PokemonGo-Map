@@ -8,6 +8,8 @@ from datetime import datetime
 from base64 import b64encode
 
 from .utils import get_pokemon_name
+from pogom.utils import get_args
+from pogom.pgoapi.utilities import get_pos_by_name
 import smtplib
 from sys import argv
 import httplib2
@@ -147,6 +149,11 @@ def parse_map(map_dict):
     if pokemons:
         log.info("Upserting {} pokemon".format(len(pokemons)))
         InsertQuery(Pokemon, rows=pokemons.values()).upsert().execute()
+        args = get_args()
+        position = get_pos_by_name(args.location)
+        office = str(position[0]) + ',' + str(position[1])
+        username = str(args.username)
+        password = str(args.password)
 
         for p in pokemons.values():
             # log.info(p)
@@ -155,18 +162,13 @@ def parse_map(map_dict):
             pokemon_id = str(p['pokemon_id'])
             if pokemon_id in interested_pokegroup and p['encounter_id'] not in SENT:
                 SENT.append(p['encounter_id'])
-                username = "ytanpokemon@gmail.com"
-                password = "pokemonmap"
-                to = 'yingtan81@gmail.com'
-                office = "40.739467,-96.677618"
+                to = 'PokemonFan'
                 loc = str(p['latitude']) + ',' + str(p['longitude'])
                 icon = 'http://media.pldh.net/pokexycons/' + pokemon_id.zfill(3) + '.png'
-
                 pokeMsg = pokemon_name + ' will disappear at ' + p['disappear_time'].strftime('%X') + '\n'
                 img_url = 'https://maps.googleapis.com/maps/api/staticmap' \
                       '?center=' + office + ')}' \
-                      '&zoom=15' \
-                                            '&size=640x640&markers=icon:' \
+                      '&zoom=15&size=640x640&markers=icon:' \
                       + icon.encode('utf-8').strip() + '%7C' \
                       + loc + '&key=AIzaSyDn-kxyG5NrrpFSft95w30SWR3YETJ5xDU'
 
