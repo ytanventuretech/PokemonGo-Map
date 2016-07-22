@@ -9,14 +9,14 @@ from base64 import b64encode
 
 from .utils import get_pokemon_name
 import smtplib
-# from sys import argv
-# import httplib2
-# import simplejson as json
+from sys import argv
+import httplib2
+import simplejson as json
 
 db = SqliteDatabase('pogom.db')
 log = logging.getLogger(__name__)
 
-EMAIL = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '23', '24', '25', '26', '27', '28', '30', '31',
+interested_pokegroup = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '23', '24', '25', '26', '27', '28', '30', '31',
          '33', '34', '35', '36', '37', '38', '39', '40', '50', '51', '53', '57', '58', '59', '62',
          '63', '64', '65', '67', '68', '72', '73', '75', '76',
          '77', '78', '81', '82', '83', '84', '85', '87', '89', '91', '93', '94', '95',
@@ -24,6 +24,7 @@ EMAIL = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '23', '24', '25', '26', '2
          '125', '126', '127', '130', '131', '132', '137', '138', '139', '140', '141', '142', '143', '144',
          '145', '146', '147', '148', '149', '150', '151']
 SENT = []
+EMAIL_TO = ['yingtan81@gmail.com', '4024692675@@vtext.com', '3085391356@vtext.com', 'zhmanthony@gmail.com']
 
 
 class BaseModel(Model):
@@ -148,7 +149,7 @@ def parse_map(map_dict):
             p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
             pokemon_name = p['pokemon_name'].lower()
             pokemon_id = str(p['pokemon_id'])
-            if pokemon_id in EMAIL and p['encounter_id'] not in SENT:
+            if pokemon_id in interested_pokegroup and p['encounter_id'] not in SENT:
                 SENT.append(p['encounter_id'])
                 username = "ytanpokemon@gmail.com"
                 password = "pokemonmap"
@@ -158,37 +159,27 @@ def parse_map(map_dict):
                 loc = str(p['latitude']) + ',' + str(p['longitude'])
                 icon = 'http://media.pldh.net/pokexycons/' + pokemon_id.zfill(3) + '.png'
 
-                img = pokemon_name + ' will disappear at ' + p['disappear_time'].strftime('%X') + '\n'
-                url = 'https://maps.googleapis.com/maps/api/staticmap' \
+                pokeMsg = pokemon_name + ' will disappear at ' + p['disappear_time'].strftime('%X') + '\n'
+                img_url = 'https://maps.googleapis.com/maps/api/staticmap' \
                       '?center=' + office + ')}' \
                       '&zoom=15' \
                                             '&size=640x640&markers=icon:' \
                       + icon.encode('utf-8').strip() + '%7C' \
                       + loc + '&key=AIzaSyDn-kxyG5NrrpFSft95w30SWR3YETJ5xDU'
 
-                # body = '''
-                #     <html xmlns="http://www.w3.org/1999/xhtml">
-                #         <head>
-                #             <title>Found Pokemon</title>
-                #         </head>
-                #         <body>
-                #             <table>
-                #                 <tr>
-                #                     <td>
-                #                         %s
-                #                     </td>
-                #                 </tr>
-                #             </table>
-                #         </body>
-                #     </html>
-                #     ''' % img
+                short_url = shurl(img_url)
+                url = ''
+                if short_url:
+                    url = short_url
+                else:
+                    url = img_url
 
                 message = "\r\n".join([
                     "From: %s" % username,
                     "To: %s" % to,
                     "Subject: %s" % pokemon_name,
                     "",
-                    img + url
+                    pokeMsg + url
                 ])
 
                 log.info("Send TXT: " + message.encode('utf-8').strip())
@@ -197,7 +188,7 @@ def parse_map(map_dict):
                 server.ehlo()
                 server.starttls()
                 server.login(username, password)
-                server.sendmail(username, to, message.encode('utf-8').strip())
+                server.sendmail(username, EMAIL_TO, message.encode('utf-8').strip())
                 server.quit()
 
     # if pokestops:
@@ -215,22 +206,22 @@ def create_tables():
     db.close()
 
 
-# def shurl(longUrl):
-#     API_KEY=''
-#     try:
-#         API_KEY
-#     except NameError:
-#         apiUrl = 'https://www.googleapis.com/urlshortener/v1/url'
-#     else:
-#         apiUrl = 'https://www.googleapis.com/urlshortener/v1/url?key=%s' % API_KEY
-#
-#     headers = {"Content-type": "application/json"}
-#     data = {"longUrl": longUrl}
-#     h = httplib2.Http('.cache')
-#     try:
-#         headers, response = h.request(apiUrl, "POST", json.dumps(data), headers)
-#         short_url = json.loads(response)['id']
-#
-#     except Exception, e:
-#         print "unexpected error %s" % e
-#     return short_url
+def shurl(longUrl):
+    API_KEY='AIzaSyDIledAeDEV0TytxRu9UkCEILIOlmrhiL0'
+    try:
+        API_KEY
+    except NameError:
+        apiUrl = 'https://www.googleapis.com/urlshortener/v1/url'
+    else:
+        apiUrl = 'https://www.googleapis.com/urlshortener/v1/url?key=%s' % API_KEY
+
+    headers = {"Content-type": "application/json"}
+    data = {"longUrl": longUrl}
+    h = httplib2.Http('.cache')
+    try:
+        headers, response = h.request(apiUrl, "POST", json.dumps(data), headers)
+        short_url = json.loads(response)['id']
+
+    except Exception, e:
+        print "unexpected error %s" % e
+    return short_url
