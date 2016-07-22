@@ -24,7 +24,7 @@ interested_pokegroup = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '23', '24',
          '125', '126', '127', '130', '131', '132', '137', '138', '139', '140', '141', '142', '143', '144',
          '145', '146', '147', '148', '149', '150', '151']
 SENT = []
-EMAIL_TO = ['yingtan81@gmail.com', '4024692675@@vtext.com', '3085391356@vtext.com', 'zhmanthony@gmail.com']
+EMAIL_TO = ['yingtan81@gmail.com', '4024692675@vtext.com', '3085391356@vtext.com', 'zhmanthony@gmail.com']
 
 
 class BaseModel(Model):
