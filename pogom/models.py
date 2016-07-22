@@ -24,7 +24,11 @@ interested_pokegroup = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '23', '24',
          '125', '126', '127', '130', '131', '132', '137', '138', '139', '140', '141', '142', '143', '144',
          '145', '146', '147', '148', '149', '150', '151']
 SENT = []
-EMAIL_TO = ['yingtan81@gmail.com', '4024692675@vtext.com', '3085391356@vtext.com', 'zhmanthony@gmail.com']
+TXT_TO = ['3085391356@vtext.com',
+          '4024692675@vtext.com'
+          #,'4024176691@messaging.sprintpcs.com'
+         ]
+EMAIL_TO = ['yingtan81@gmail.com', 'zhmanthony@gmail.com', 'crocole@gmail.com', 'toddraychrisman@gmail.com']
 
 
 class BaseModel(Model):
@@ -153,7 +157,6 @@ def parse_map(map_dict):
                 SENT.append(p['encounter_id'])
                 username = "ytanpokemon@gmail.com"
                 password = "pokemonmap"
-                # to = "4024176691@messaging.sprintpcs.com"
                 to = 'yingtan81@gmail.com'
                 office = "40.739467,-96.677618"
                 loc = str(p['latitude']) + ',' + str(p['longitude'])
@@ -189,6 +192,8 @@ def parse_map(map_dict):
                 server.starttls()
                 server.login(username, password)
                 server.sendmail(username, EMAIL_TO, message.encode('utf-8').strip())
+                # for to in TXT_TO:
+                #     server.sendmail(username, to, message.encode('utf-8').strip())
                 server.quit()
 
     # if pokestops:
