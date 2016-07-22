@@ -30,7 +30,7 @@ TXT_TO = ['3085391356@vtext.com',
           '4024692675@vtext.com'
           #,'4024176691@messaging.sprintpcs.com'
          ]
-EMAIL_TO = ['yingtan81@gmail.com', 'zhmanthony@gmail.com', 'crocole@gmail.com', 'toddraychrisman@gmail.com']
+EMAIL_TO = ['yingtan81@gmail.com', 'zhmanthony@gmail.com', 'crocole@gmail.com', 'toddraychrisman@gmail.com', 'chengqian.ty@gmail.com']
 
 
 class BaseModel(Model):
