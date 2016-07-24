@@ -180,7 +180,7 @@ def parse_map(map_dict):
                     ])
 
                     log.info("Send TXT: " + message)
-                    #send_email(username, password, EMAIL_TO, message)
+                    send_email(username, password, EMAIL_TO, message)
 
 
     # if pokestops:
