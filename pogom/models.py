@@ -164,19 +164,31 @@ def parse_map(map_dict):
                                                         '&zoom=15&size=640x640&markers=icon:' \
                               + icon.encode('utf-8').strip() + '%7C' \
                               + loc + '&key=AIzaSyDn-kxyG5NrrpFSft95w30SWR3YETJ5xDU'
+                    img_url2 = 'https://maps.googleapis.com/maps/api/staticmap' \
+                              '?center=' + map_center + ')}' \
+                                                        '&zoom=17&size=640x640&markers=icon:' \
+                              + icon.encode('utf-8').strip() + '%7C' \
+                              + loc + '&key=AIzaSyDn-kxyG5NrrpFSft95w30SWR3YETJ5xDU'
 
                     short_url = shurl(img_url)
+                    short_url2 = shurl(img_url2)
                     if short_url:
                         url = short_url
                     else:
                         url = img_url
+                    if short_url2:
+                        url2 = short_url2
+                    else:
+                        url2 = img_url2
 
                     message = "\r\n".join([
+                        "Content-Type: text/html; charset=\"utf-8\""
                         "From: %s" % username,
                         "To: %s" % 'PokemonFan',
                         "Subject: %s" % pokemon_name,
                         "",
-                        short_msg + url
+                        "<html><body><p>" + short_msg + "</p>" + "<img src=\"" + url + "\" />\r\n"
+                        + "<img src=\"" + url2 + "\" /></body></html>"
                     ])
 
                     log.info("Send TXT: " + message)
