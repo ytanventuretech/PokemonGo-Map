@@ -21,8 +21,8 @@ position = get_pos_by_name(get_args().location)
 map_center = str(position[0]) + ',' + str(position[1])
 username = get_args().username
 password = get_args().password
-utc_timezone = tz.gettz('UTC')
-local_timezone = tz.gettz('America/Chicago')
+local_timezone = tz.tzlocal()
+cdt_tz = tz.gettz('America/Chicago')
 
 
 class BaseModel(Model):
@@ -157,7 +157,7 @@ def parse_map(map_dict):
 
                     loc = str(p['latitude']) + ',' + str(p['longitude'])
                     icon = 'http://media.pldh.net/pokexycons/' + pokemon_id.zfill(3) + '.png'
-                    disappear_time = p['disappear_time'].replace(tzinfo=utc_timezone).astimezone(local_timezone)
+                    disappear_time = p['disappear_time'].replace(tzinfo=local_timezone).astimezone(cdt_tz)
                     short_msg = pokemon_name + ' will disappear at ' + disappear_time.strftime('%X') + '\n'
                     img_url = 'https://maps.googleapis.com/maps/api/staticmap' \
                               '?center=' + map_center + ')}' \
