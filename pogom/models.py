@@ -2,21 +2,34 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import os
 import time
-from peewee import Model, SqliteDatabase, InsertQuery,\
+from base64 import b64encode
+from datetime import datetime, timedelta
+
+from dateutil import tz
+from peewee import SqliteDatabase, InsertQuery,\
                    IntegerField, CharField, DoubleField, BooleanField,\
-                   DateTimeField, OperationalError, create_model_tables
+                   DateTimeField, OperationalError
 from playhouse.flask_utils import FlaskDB
 from playhouse.pool import PooledMySQLDatabase
 from playhouse.shortcuts import RetryOperationalError
-from datetime import datetime, timedelta
-from base64 import b64encode
 
+from pogom.pgoapi.utilities import get_pos_by_name
+from pogom.utils import get_args, load_profile, send_email, shurl
 from . import config
-from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, get_args, send_to_webhook
-from .transform import transform_from_wgs_to_gcj
 from .customLog import printPokemon
+from .transform import transform_from_wgs_to_gcj
+from .utils import get_pokemon_name, get_pokemon_rarity, get_pokemon_types, send_to_webhook
+
+POKE_GROUP = load_profile()[1]
+EMAIL_TO = load_profile()[0]
+SENT = []
+position = get_pos_by_name(get_args().location)
+map_center = str(position[0]) + ',' + str(position[1])
+username = get_args().username
+password = get_args().password
+local_timezone = tz.tzlocal()
+cdt_tz = tz.gettz('America/Chicago')
 
 log = logging.getLogger(__name__)
 
@@ -317,6 +330,58 @@ def parse_map(map_dict, iteration_num, step, step_location):
         pokemons_upserted = len(pokemons)
         log.debug("Upserting {} pokemon".format(len(pokemons)))
         bulk_upsert(Pokemon, pokemons)
+
+        if len(EMAIL_TO) > 0 and len(POKE_GROUP) > 0:
+            for p in pokemons.values():
+                # log.info(p)
+                p['pokemon_name'] = get_pokemon_name(p['pokemon_id'])
+                pokemon_name = p['pokemon_name'].lower()
+                pokemon_id = str(p['pokemon_id'])
+
+                if pokemon_id in POKE_GROUP and p['encounter_id'] not in SENT:
+                    SENT.append(p['encounter_id'])
+
+                    if len(SENT) > 10000:
+                        del SENT[0:1000]
+
+                    loc = str(p['latitude']) + ',' + str(p['longitude'])
+                    icon = 'http://media.pldh.net/pokexycons/' + pokemon_id.zfill(3) + '.png'
+                    disappear_time = p['disappear_time'].replace(tzinfo=local_timezone).astimezone(cdt_tz)
+                    short_msg = pokemon_name + ' will disappear at ' + disappear_time.strftime('%X') + '\n'
+                    img_url = 'https://maps.googleapis.com/maps/api/staticmap' \
+                              '?center=' + map_center + ')}' \
+                                                        '&zoom=15&size=640x640&markers=icon:' \
+                              + icon.encode('utf-8').strip() + '%7C' \
+                              + loc + '&key=AIzaSyDn-kxyG5NrrpFSft95w30SWR3YETJ5xDU'
+                    img_url2 = 'https://maps.googleapis.com/maps/api/staticmap' \
+                               '?center=' + map_center + ')}' \
+                                                         '&zoom=17&size=640x640&markers=icon:' \
+                               + icon.encode('utf-8').strip() + '%7C' \
+                               + loc + '&key=AIzaSyDn-kxyG5NrrpFSft95w30SWR3YETJ5xDU'
+
+                    short_url = shurl(img_url)
+                    short_url2 = shurl(img_url2)
+                    if short_url:
+                        url = short_url
+                    else:
+                        url = img_url
+                    if short_url2:
+                        url2 = short_url2
+                    else:
+                        url2 = img_url2
+
+                    message = "\r\n".join([
+                        "Content-Type: text/html; charset=\"utf-8\""
+                        "From: %s" % username,
+                        "To: %s" % 'PokemonFan',
+                        "Subject: %s" % pokemon_name,
+                        "",
+                        "<html><body><p>" + short_msg + "</p>" + "<img src=\"" + url + "\" />\r\n"
+                        + "<img src=\"" + url2 + "\" /></body></html>"
+                    ])
+
+                    log.info("Send TXT: " + message)
+                    send_email(username, password, EMAIL_TO, message)
 
     if pokestops and config['parse_pokestops']:
         pokestops_upserted = len(pokestops)
