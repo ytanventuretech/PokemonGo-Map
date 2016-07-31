@@ -26,9 +26,9 @@
     "jshint-stylish": "latest"
   },
   "scripts": {
-    "postinstall": "./node_modules/.bin/grunt build",
-    "build": "./node_modules/.bin/grunt build",
-    "lint": "./node_modules/.bin/grunt lint"
+    "postinstall": "grunt build",
+    "build": "grunt build",
+    "lint": "grunt lint"
   },
   "repository": {
     "type": "git",
@@ -43,5 +43,10 @@
   "bugs": {
     "url": "https://github.com/AHAAAAAAA/PokemonGo-Map/issues"
   },
-  "homepage": "https://github.com/AHAAAAAAA/PokemonGo-Map#readme"
+  "homepage": "https://github.com/AHAAAAAAA/PokemonGo-Map#readme",
+  "devDependencies": {
+    "grunt-autoprefixer": "^3.0.4",
+    "grunt-contrib-sass": "^1.0.0",
+    "grunt-contrib-watch": "^1.0.0"
+  }
 }
