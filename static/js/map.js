@@ -5,6 +5,7 @@
 
 var $selectExclude;
 var $selectNotify;
+var $selectStyle;
 
 var language = document.documentElement.lang == "" ? "en" : document.documentElement.lang;
 var idToPokemon = {};
@@ -224,7 +225,7 @@ function initMap() {
     zoom: 16,
     fullscreenControl: true,
     streetViewControl: false,
-    mapTypeControl: true,
+    mapTypeControl: false,
     mapTypeControlOptions: {
       style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
       position: google.maps.ControlPosition.RIGHT_TOP,
@@ -330,6 +331,16 @@ function createSearchMarker() {
   return marker;
 }
 
+var searchControlURI = 'search_control';
+function searchControl(action) {
+  $.post(searchControlURI + '?action='+encodeURIComponent(action));
+}
+function updateSearchStatus() {
+  $.getJSON(searchControlURI).then(function(data){
+    $('#search-switch').prop('checked', data.status);
+  })
+}
+
 function initSidebar() {
   $('#gyms-switch').prop('checked', Store.get('showGyms'));
   $('#pokemon-switch').prop('checked', Store.get('showPokemon'));
@@ -341,6 +352,9 @@ function initSidebar() {
   $('#sound-switch').prop('checked', Store.get('playSound'));
   var searchBox = new google.maps.places.SearchBox(document.getElementById('next-location'));
   $("#next-location").css("background-color", $('#geoloc-switch').prop('checked') ? "#e0e0e0" : "#ffffff");
+
+  updateSearchStatus();
+  setInterval(updateSearchStatus,5000);
 
   searchBox.addListener('places_changed', function() {
     var places = searchBox.getPlaces();
@@ -615,6 +629,12 @@ function setupGymMarker(item) {
   return marker;
 }
 
+function updateGymMarker(item, marker) {
+  marker.setIcon('static/forts/' + gym_types[item.team_id] + '.png');
+  marker.infoWindow.setContent(gymLabel(gym_types[item.team_id], item.team_id, item.gym_points, item.latitude, item.longitude));
+  return marker;
+}
+
 function setupPokestopMarker(item) {
   var imagename = !!item.lure_expiration ? "PstopLured" : "Pstop";
   var marker = new google.maps.Marker({
@@ -655,8 +675,9 @@ function setupScannedMarker(item) {
 
   var marker = new google.maps.Circle({
     map: map,
+    clickable: false,
     center: circleCenter,
-    radius: 100, // 10 miles in metres
+    radius: 70, // metres
     fillColor: getColorByDate(item.last_modified),
     strokeWeight: 1
   });
@@ -730,12 +751,12 @@ function showInBoundsMarkers(markers) {
     var marker = markers[key].marker;
     var show = false;
     if (!markers[key].hidden) {
-      if (typeof marker.getPosition === 'function') {
-        if (map.getBounds().contains(marker.getPosition())) {
+      if (typeof marker.getBounds === 'function') {
+        if (map.getBounds().intersects(marker.getBounds())) {
           show = true;
         }
-      } else if (typeof marker.getCenter === 'function') {
-        if (map.getBounds().contains(marker.getCenter())) {
+      } else if (typeof marker.getPosition === 'function') {
+        if (map.getBounds().contains(marker.getPosition())) {
           show = true;
         }
       }
@@ -878,21 +899,11 @@ function processGyms(i, item) {
   }
 
   if (item.gym_id in map_data.gyms) {
-    // if team has changed, create new marker (new icon)
-    if (map_data.gyms[item.gym_id].team_id != item.team_id) {
-      map_data.gyms[item.gym_id].marker.setMap(null);
-      map_data.gyms[item.gym_id].marker = setupGymMarker(item);
-    } else { // if it hasn't changed generate new label only (in case prestige has changed)
-      map_data.gyms[item.gym_id].marker.infoWindow = new google.maps.InfoWindow({
-        content: gymLabel(gym_types[item.team_id], item.team_id, item.gym_points, item.latitude, item.longitude),
-        disableAutoPan: true
-      });
-    }
+    item.marker = updateGymMarker(item, map_data.gyms[item.gym_id].marker);
   } else { // add marker to map and item to dict
-    if (item.marker) item.marker.setMap(null);
     item.marker = setupGymMarker(item);
-    map_data.gyms[item.gym_id] = item;
   }
+  map_data.gyms[item.gym_id] = item;
 
 }
 
@@ -1115,7 +1126,7 @@ function centerMap(lat, lng, zoom) {
 function i8ln(word) {
   if ($.isEmptyObject(i8ln_dictionary) && language != "en" && language_lookups < language_lookup_threshold) {
     $.ajax({
-      url: "static/locales/" + language + ".json",
+      url: "static/dist/locales/" + language + ".min.json",
       dataType: 'json',
       async: false,
       success: function(data) {
@@ -1151,6 +1162,40 @@ $(function() {
 });
 
 $(function() {
+  // populate Navbar Style menu
+  $selectStyle = $("#map-style")
+
+  // Load Stylenames, translate entries, and populate lists
+  $.getJSON("static/dist/data/mapstyle.min.json").done(function(data){
+    var styleList = []
+
+    $.each(data, function(key, value){
+    styleList.push( { id: key, text: i8ln(value) } );
+  });
+
+
+  // setup the stylelist
+  $selectStyle.select2({
+    placeholder: "Select Style",
+    data: styleList
+  });
+
+  // setup the list change behavior
+  $selectStyle.on("change", function (e) {
+    selectedStyle = $selectStyle.val();
+    map.setMapTypeId(selectedStyle);
+    Store.set('map_style', selectedStyle);
+  });
+
+
+  // recall saved mapstyle
+  $selectStyle.val(Store.get('map_style')).trigger("change");
+
+  });
+
+});
+
+$(function() {
   function formatState(state) {
     if (!state.id) {
       return state.text;
@@ -1166,7 +1211,7 @@ $(function() {
   var numberOfPokemon = 151;
 
   // Load pokemon names and populate lists
-  $.getJSON("static/locales/pokemon.json").done(function(data) {
+  $.getJSON("static/dist/data/pokemon.min.json").done(function(data) {
     var pokeList = [];
 
     $.each(data, function(key, value) {
@@ -1176,7 +1221,7 @@ $(function() {
       var _types = [];
       pokeList.push({
         id: key,
-        text: value['name'] + ' - #' + key
+        text: i8ln(value['name']) + ' - #' + key
       });
       value['name'] = i8ln(value['name']);
       value['rarity'] = i8ln(value['rarity']);
@@ -1304,4 +1349,9 @@ $(function() {
     else
       Store.set('geoLocate', this.checked);
   });
+
+  $('#search-switch').change(function() {
+    searchControl(this.checked?'on':'off');
+  });
+
 });
