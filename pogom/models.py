@@ -26,8 +26,8 @@ EMAIL_TO = load_profile()[0]
 SENT = []
 position = get_pos_by_name(get_args().location)
 map_center = str(position[0]) + ',' + str(position[1])
-username = get_args().username
-password = get_args().password
+username = get_args().username[0]
+password = get_args().password[0]
 local_timezone = tz.tzlocal()
 cdt_tz = tz.gettz('America/Chicago')
 

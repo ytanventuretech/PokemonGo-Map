@@ -302,12 +302,16 @@ def load_profile():
 
 
 def send_email(username, password, email_to, message):
-    server = smtplib.SMTP("smtp.gmail.com", 587)
-    server.ehlo()
-    server.starttls()
-    server.login(username, password)
-    server.sendmail(username, email_to, message.encode('utf-8').strip())
-    server.quit()
+    try:
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.ehlo()
+        server.starttls()
+        server.login(username, password)
+        server.sendmail(username, email_to, message.encode('utf-8').strip())
+        server.close()
+        log.info('successfully sent the mail')
+    except:
+        log.error("failed to send mail: " + password)
 
 def shurl(longUrl):
     API_KEY = 'AIzaSyDIledAeDEV0TytxRu9UkCEILIOlmrhiL0'
