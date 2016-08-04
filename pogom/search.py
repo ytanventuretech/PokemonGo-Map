@@ -275,7 +275,8 @@ def check_login(args, account, api, position):
                 log.error('Failed to login to Pokemon Go with account %s. Trying again in %g seconds', account['username'], args.login_delay)
                 time.sleep(args.login_delay)
 
-    api.activate_signature("encrypt.dll")
+    #api.activate_signature("encrypt.dll")
+    api.activate_signature("libencrypt.so")
 
     log.debug('Login for account %s successful', account['username'])
 
